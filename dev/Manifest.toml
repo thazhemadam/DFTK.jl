@@ -14,9 +14,9 @@ version = "2.3.0"
 
 [[ArrayInterface]]
 deps = ["LinearAlgebra", "Requires", "SparseArrays"]
-git-tree-sha1 = "de4bb46df3f67769356e737f2c7ce1d67da3ae49"
+git-tree-sha1 = "b7898df8dff4098db4a9494d2451c5c2edd4cb2c"
 uuid = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
-version = "2.14.4"
+version = "2.14.5"
 
 [[Artifacts]]
 deps = ["Pkg"]
@@ -47,9 +47,9 @@ version = "0.3.0"
 
 [[Compat]]
 deps = ["Base64", "Dates", "DelimitedFiles", "Distributed", "InteractiveUtils", "LibGit2", "Libdl", "LinearAlgebra", "Markdown", "Mmap", "Pkg", "Printf", "REPL", "Random", "SHA", "Serialization", "SharedArrays", "Sockets", "SparseArrays", "Statistics", "Test", "UUIDs", "Unicode"]
-git-tree-sha1 = "2724ac91f1334c8e5c10565faad5afeafd1bfc89"
+git-tree-sha1 = "919c7f3151e79ff196add81d7f4e45d91bbf420b"
 uuid = "34da2185-b29b-5c13-b0c7-acf172513d20"
-version = "3.24.0"
+version = "3.25.0"
 
 [[CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -69,12 +69,12 @@ uuid = "187b0558-2788-49d3-abe0-74a17ed4e7c9"
 version = "1.0.0"
 
 [[DFTK]]
-deps = ["AbstractFFTs", "Conda", "FFTW", "ForwardDiff", "GenericLinearAlgebra", "Interpolations", "IterTools", "IterativeSolvers", "JSON", "Libxc", "LineSearches", "LinearAlgebra", "LinearMaps", "MPI", "Markdown", "NCDatasets", "NLsolve", "Optim", "OrderedCollections", "PeriodicTable", "Polynomials", "Primes", "Printf", "ProgressMeter", "PyCall", "Requires", "Roots", "SpecialFunctions", "StaticArrays", "Statistics", "TimerOutputs", "Unitful", "UnitfulAtomic", "spglib_jll"]
-git-tree-sha1 = "e419c0fbafff3c6bd1eef87e119e2dd37576cfb7"
-repo-rev = "fff3d90592ed39857039656c7cc2e4f3486effb4"
+deps = ["AbstractFFTs", "Conda", "FFTW", "ForwardDiff", "Interpolations", "IterTools", "IterativeSolvers", "JSON", "Libxc", "LineSearches", "LinearAlgebra", "LinearMaps", "MPI", "Markdown", "NCDatasets", "NLsolve", "Optim", "OrderedCollections", "PeriodicTable", "Polynomials", "Primes", "Printf", "ProgressMeter", "PyCall", "Requires", "Roots", "SpecialFunctions", "StaticArrays", "Statistics", "TimerOutputs", "Unitful", "UnitfulAtomic", "spglib_jll"]
+git-tree-sha1 = "87e3159c955021ee89a0a3f27238a8c4d249348b"
+repo-rev = "8855bea171e2b41a8d20e3301e98cdf3a7b1ca9d"
 repo-url = "https://github.com/JuliaMolSim/DFTK.jl.git"
 uuid = "acf6eb54-70d9-11e9-0013-234b7a5f5337"
-version = "0.2.2"
+version = "0.2.3"
 
 [[DataAPI]]
 git-tree-sha1 = "ad84f52c0b8f05aa20839484dbaf01690b41ff84"
@@ -163,12 +163,6 @@ deps = ["CommonSubexpressions", "DiffResults", "DiffRules", "NaNMath", "Random",
 git-tree-sha1 = "8de2519a83c6c1c2442c2f481dd9a8364855daf4"
 uuid = "f6369f11-7733-5829-9624-2563aa707210"
 version = "0.10.14"
-
-[[GenericLinearAlgebra]]
-deps = ["LinearAlgebra", "Printf", "Random"]
-git-tree-sha1 = "29a74c7ff32df6eb40c3cb4a5252db14fd33b9f2"
-uuid = "14197337-ba66-59df-a3e3-ca00e7dcff7a"
-version = "0.2.4"
 
 [[HDF5_jll]]
 deps = ["Artifacts", "JLLWrappers", "LibCURL_jll", "Libdl", "OpenSSL_jll", "Pkg", "Zlib_jll"]
@@ -403,9 +397,9 @@ version = "0.12.1"
 
 [[Parsers]]
 deps = ["Dates"]
-git-tree-sha1 = "6370b5b3cf2ce5a3d2b6f7ab2dc10f374e4d7d2b"
+git-tree-sha1 = "50c9a9ed8c714945e01cd53a21007ed3865ed714"
 uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
-version = "1.0.14"
+version = "1.0.15"
 
 [[PeriodicTable]]
 deps = ["Base64", "Test", "Unitful"]
@@ -418,10 +412,10 @@ deps = ["Dates", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "R
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 
 [[Polynomials]]
-deps = ["GenericLinearAlgebra", "Intervals", "LinearAlgebra", "OffsetArrays", "RecipesBase"]
-git-tree-sha1 = "502353a70bf95efe28c0e7ac99ddd8925ccd8c7c"
+deps = ["Intervals", "LinearAlgebra", "OffsetArrays", "RecipesBase"]
+git-tree-sha1 = "1c6c5b0c3713738d6b987903c529d80622c37e07"
 uuid = "f27b6e38-b328-58d1-80ce-0feddd5e7a45"
-version = "1.1.13"
+version = "1.2.0"
 
 [[PositiveFactorizations]]
 deps = ["LinearAlgebra"]
