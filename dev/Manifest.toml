@@ -34,10 +34,10 @@ version = "1.0.0"
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 
 [[ChainRulesCore]]
-deps = ["LinearAlgebra", "MuladdMacro", "SparseArrays"]
-git-tree-sha1 = "15081c431bb25848ad9b0d172a65794f3a3e197a"
+deps = ["Compat", "LinearAlgebra", "SparseArrays"]
+git-tree-sha1 = "89a0b14325d0f02f9caed7c8ba91181a5d254874"
 uuid = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
-version = "0.9.24"
+version = "0.9.26"
 
 [[CommonSubexpressions]]
 deps = ["MacroTools", "Test"]
@@ -70,8 +70,8 @@ version = "1.0.0"
 
 [[DFTK]]
 deps = ["AbstractFFTs", "Conda", "FFTW", "ForwardDiff", "Interpolations", "IterTools", "IterativeSolvers", "JSON", "Libxc", "LineSearches", "LinearAlgebra", "LinearMaps", "MPI", "Markdown", "NLsolve", "Optim", "OrderedCollections", "PeriodicTable", "Polynomials", "Primes", "Printf", "ProgressMeter", "PyCall", "Requires", "Roots", "SpecialFunctions", "StaticArrays", "Statistics", "TimerOutputs", "Unitful", "UnitfulAtomic", "spglib_jll"]
-git-tree-sha1 = "ca21c4d329fb6a4840b68add6e2de8000009b69c"
-repo-rev = "3fd574046222e27616a70802ef5f2fb1ecb877f2"
+git-tree-sha1 = "0920b83daed413109f7437dd6d42404bad1bce2a"
+repo-rev = "9b60bd02a426f7cd2dfd77e090584322384090b5"
 repo-url = "https://github.com/JuliaMolSim/DFTK.jl.git"
 uuid = "acf6eb54-70d9-11e9-0013-234b7a5f5337"
 version = "0.2.4"
@@ -148,9 +148,9 @@ version = "3.3.9+7"
 
 [[FillArrays]]
 deps = ["LinearAlgebra", "Random", "SparseArrays"]
-git-tree-sha1 = "ff537e5a3cba92fb48f30fec46723510450f2c0e"
+git-tree-sha1 = "8bd8e47ff5d34b20f0aa9641988eb660590008bc"
 uuid = "1a297f60-69ca-5386-bcde-b61e274b549b"
-version = "0.10.2"
+version = "0.11.0"
 
 [[FiniteDiff]]
 deps = ["ArrayInterface", "LinearAlgebra", "Requires", "SparseArrays", "StaticArrays"]
@@ -198,9 +198,9 @@ uuid = "42fd0dbc-a981-5370-80f2-aaf504508153"
 version = "0.9.0"
 
 [[JLLWrappers]]
-git-tree-sha1 = "04b49c556240b62d5a799e94c63d5fc14d3c07cd"
+git-tree-sha1 = "a431f5f2ca3f4feef3bd7a5e94b8b8d4f2f647a0"
 uuid = "692b3bcd-3c85-4b1f-b108-f13ce0eb3210"
-version = "1.1.4"
+version = "1.2.0"
 
 [[JSON]]
 deps = ["Dates", "Mmap", "Parsers", "Unicode"]
@@ -245,9 +245,9 @@ uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
 [[LinearMaps]]
 deps = ["LinearAlgebra", "SparseArrays"]
-git-tree-sha1 = "3fcf4c24d405bb5eccd5e509061baad5e74f3157"
+git-tree-sha1 = "dde29156188b73563ba144ede53a593df50c5c6f"
 uuid = "7a12625a-238d-50fd-b39a-03d52299707e"
-version = "3.0.1"
+version = "3.1.0"
 
 [[Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
@@ -301,11 +301,6 @@ git-tree-sha1 = "916b850daad0d46b8c71f65f719c49957e9513ed"
 uuid = "78c3b35d-d492-501b-9361-3d52fe80e533"
 version = "0.7.1"
 
-[[MuladdMacro]]
-git-tree-sha1 = "c6190f9a7fc5d9d5915ab29f2134421b12d24a68"
-uuid = "46d2c3a1-f734-5fdb-9937-b9b9aeba4221"
-version = "0.2.2"
-
 [[NLSolversBase]]
 deps = ["DiffResults", "Distributed", "FiniteDiff", "ForwardDiff"]
 git-tree-sha1 = "39d6bc45e99c96e6995cbddac02877f9b61a1dd1"
@@ -343,9 +338,9 @@ version = "0.5.3+4"
 
 [[Optim]]
 deps = ["Compat", "FillArrays", "LineSearches", "LinearAlgebra", "NLSolversBase", "NaNMath", "Parameters", "PositiveFactorizations", "Printf", "SparseArrays", "StatsBase"]
-git-tree-sha1 = "bc382053437572df944d02be10b5142808afab7e"
+git-tree-sha1 = "9f563aaabe98c0e5b21697b963d1e64377e9de5a"
 uuid = "429524aa-4258-5aef-a3af-852621145aeb"
-version = "1.2.1"
+version = "1.2.2"
 
 [[OrderedCollections]]
 git-tree-sha1 = "cf59cfed2e2c12e8a2ff0a4f1e9b2cd8650da6db"
@@ -403,9 +398,9 @@ version = "1.4.1"
 
 [[PyCall]]
 deps = ["Conda", "Dates", "Libdl", "LinearAlgebra", "MacroTools", "Serialization", "VersionParsing"]
-git-tree-sha1 = "b6dff5fa725eff4f775f472acd86756d6e31fb02"
+git-tree-sha1 = "dd1a970b543bd02efce2984582e996af28cab27f"
 uuid = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
-version = "1.92.1"
+version = "1.92.2"
 
 [[REPL]]
 deps = ["InteractiveUtils", "Markdown", "Sockets"]
