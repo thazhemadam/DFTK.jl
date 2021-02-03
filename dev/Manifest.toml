@@ -70,8 +70,8 @@ version = "1.0.0"
 
 [[DFTK]]
 deps = ["AbstractFFTs", "Conda", "FFTW", "ForwardDiff", "Interpolations", "IterTools", "IterativeSolvers", "JSON", "Libxc", "LineSearches", "LinearAlgebra", "LinearMaps", "MPI", "Markdown", "NLsolve", "Optim", "OrderedCollections", "PeriodicTable", "Polynomials", "Primes", "Printf", "ProgressMeter", "PyCall", "Requires", "Roots", "SpecialFunctions", "StaticArrays", "Statistics", "TimerOutputs", "Unitful", "UnitfulAtomic", "spglib_jll"]
-git-tree-sha1 = "1b3ef77fd378152a84834c0dc796cb119a7bbb61"
-repo-rev = "eeede89603e48e8e281ac12161f7d584a0bb853c"
+git-tree-sha1 = "c1839ccb03f258095f75e5c6dabc4a43ca2bc3d7"
+repo-rev = "8d91cfccf58fe2f22b231ee34e8e690049e9858c"
 repo-url = "https://github.com/JuliaMolSim/DFTK.jl.git"
 uuid = "acf6eb54-70d9-11e9-0013-234b7a5f5337"
 version = "0.2.6"
@@ -228,9 +228,9 @@ version = "1.16.0+7"
 
 [[Libxc]]
 deps = ["Libxc_jll"]
-git-tree-sha1 = "48fbaa54bf5c115bb33de28353c5b0e166ddcbbe"
+git-tree-sha1 = "15fc54f2d0f39e80791df8e222e933c54fcda970"
 uuid = "66e17ffc-8502-11e9-23b5-c9248d0eb96d"
-version = "0.3.4"
+version = "0.3.6"
 
 [[Libxc_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -438,9 +438,9 @@ version = "1.1.2"
 
 [[Roots]]
 deps = ["Printf"]
-git-tree-sha1 = "8f743e4f4368d1d753f3806bf635899dad6b4847"
+git-tree-sha1 = "369e25546984dff5df351bc056fccc30de615080"
 uuid = "f2b01f46-fcfa-551c-844a-d8ac1e96c665"
-version = "1.0.7"
+version = "1.0.8"
 
 [[SHA]]
 uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
