@@ -21,7 +21,7 @@ atoms = [Si => [ones(3)/8 + 0 .* [0.42, 0.35, 0.24] ./ 30, -ones(3)/8]]
 
 model = model_LDA(lattice, atoms)
 kgrid = [1,1,1]  # k-point grid (Regular Monkhorst-Pack grid)
-Ecut_ref = 100   # kinetic energy cutoff in Hartree
+Ecut_ref = 50   # kinetic energy cutoff in Hartree
 tol = 1e-10
 tol_krylov = 1e-12
 basis_ref = PlaneWaveBasis(model, Ecut_ref; kgrid=kgrid)
@@ -45,7 +45,7 @@ f_ref = compute_forces(scfres_ref)
 
 ## min and max Ecuts for the two grid solution
 Ecut_min = 5
-Ecut_max = 80
+Ecut_max = 30
 
 Ecut_list = Ecut_min:5:Ecut_max
 K = length(Ecut_list)
@@ -68,11 +68,17 @@ for Ecut_g in Ecut_list
     j = i
     basis_g = PlaneWaveBasis(model, Ecut_g; kgrid=kgrid)
 
+    # packing routine on coarse grid
+    pack(φ) = pack_arrays(basis_g, φ)
+    unpack(x) = unpack_arrays(basis_g, x)
+    packed_proj(δx, x) = pack(proj_tangent(unpack(δx), unpack(x)))
+
     ## solve eigenvalue system
     scfres_g = self_consistent_field(basis_g, tol=tol,
                                      determine_diagtol=DFTK.ScfDiagtol(diagtol_max=1e-10),
                                      is_converged=DFTK.ScfConvergenceDensity(tol))
-    ham = scfres_g.ham
+    ham_g = scfres_g.ham
+    ρ_g = scfres_g.ρ
 
     ## quantities
     φ = similar(scfres_g.ψ)
@@ -86,14 +92,11 @@ for Ecut_g in Ecut_list
         println("Ecut fin = $(Ecut_f)")
         # fine grid
         basis_f = PlaneWaveBasis(model, Ecut_f; kgrid=kgrid)
-        # packing routine on fine grid
-        pack(φ) = pack_arrays(basis_f, φ)
-        unpack(x) = unpack_arrays(basis_f, x)
-        packed_proj(δx, x) = pack(proj_tangent(unpack(δx), unpack(x)))
 
-        # compute residual
+        # compute residual and keep only LF
         φr = DFTK.interpolate_blochwave(φ, basis_g, basis_f)
         res = compute_scf_residual(basis_f, φr, occupation)
+        resLF = DFTK.interpolate_blochwave(res, basis_f, basis_g)
 
         ## prepare Pks
         kpt = basis_f.kpoints[1]
@@ -103,16 +106,12 @@ for Ecut_g in Ecut_list
         end
 
         ## compute error on LF with Schur
-        ρr = compute_density(basis_f, φr, occupation)
-        E, ham_f = energy_hamiltonian(basis_f, φr, occupation; ρ=ρr)
         function f(x)
             x = unpack(x)
-            x = keep_LF(x, basis_f, Ecut_g)
-            x = proj_tangent(x, φr)
-            Kx = apply_K(basis_f, x, φr, ρr, occupation)
-            Ωx = apply_Ω(basis_f, x, φr, ham_f)
-            x = proj_tangent(Kx .+ Ωx, φr)
-            x = keep_LF(x, basis_f, Ecut_g)
+            x = proj_tangent(x, φ)
+            Kx = apply_K(basis_g, x, φ, ρ, occupation)
+            Ωx = apply_Ω(basis_g, x, φ, ham_g)
+            x = proj_tangent(Kx .+ Ωx, φ)
             pack(x)
         end
 
@@ -120,13 +119,12 @@ for Ecut_g in Ecut_list
         err = compute_error(basis_f, φr, φ_ref)
         Merr = apply_sqrt_M(φr, Pks, err)
 
-        resLF = keep_LF(res, basis_f, Ecut_g)
-        resHF = keep_HF(res, basis_f, Ecut_g)
+        resHF = res - DFTK.interpolate_blochwave(resLF, basis_g, basis_f)
         resHF = apply_inv_T(Pks, resHF)
         ΩpKres = apply_Ω(basis_f, resHF, φr, ham_f) .+ apply_K(basis_f, resHF, φr, ρr, occupation)
-        ΩpKresLF = keep_LF(ΩpKres, basis_f, Ecut_g)
-        eLF, info = linsolve(f, pack(proj_tangent(resLF-ΩpKresLF, φr)), tol=1e-14;
-                             orth=OrthogonalizeAndProject(packed_proj, pack(φr)))
+        ΩpKresLF = DFTK.interpolate_blochwave(ΩpKres, basis_f, basis_g)
+        eLF, info = linsolve(f, pack(proj_tangent(resLF - ΩpKresLF, φ)), tol=1e-14;
+                             orth=OrthogonalizeAndProject(packed_proj, pack(φ)))
 
         # Apply M^+-1/2
         MeLF = apply_sqrt_M(φr, Pks, unpack(eLF))
