@@ -17,7 +17,7 @@ lattice = a / 2 * [[0 1 1.];
                    [1 0 1.];
                    [1 1 0.]]
 Si = ElementPsp(:Si, psp=load_psp("hgh/lda/Si-q4"))
-atoms = [Si => [ones(3)/8 + 0 .* [0.42, 0.35, 0.24] ./ 30, -ones(3)/8]]
+atoms = [Si => [ones(3)/8 + [0.42, 0.35, 0.24] ./ 20, -ones(3)/8]]
 
 model = model_LDA(lattice, atoms)
 kgrid = [1,1,1]  # k-point grid (Regular Monkhorst-Pack grid)
@@ -97,6 +97,12 @@ for Ecut_g in Ecut_list
         φr = DFTK.interpolate_blochwave(φ, basis_g, basis_f)
         res = compute_scf_residual(basis_f, φr, occupation)
         resLF = DFTK.interpolate_blochwave(res, basis_f, basis_g)
+        resLF_f = DFTK.interpolate_blochwave(resLF, basis_g, basis_f)
+        println("LF : ", norm(resLF_f - keep_LF(res, basis_f, Ecut_g)))
+
+        # compute hamiltonian
+        ρr = compute_density(basis_f, φr, occupation)
+        _, ham_f = energy_hamiltonian(basis_f, φr, occupation; ρ=ρr)
 
         ## prepare Pks
         kpt = basis_f.kpoints[1]
@@ -109,39 +115,42 @@ for Ecut_g in Ecut_list
         function f(x)
             x = unpack(x)
             x = proj_tangent(x, φ)
-            Kx = apply_K(basis_g, x, φ, ρ, occupation)
+            Kx = apply_K(basis_g, x, φ, ρ_g, occupation)
             Ωx = apply_Ω(basis_g, x, φ, ham_g)
             x = proj_tangent(Kx .+ Ωx, φ)
             pack(x)
         end
 
-
         err = compute_error(basis_f, φr, φ_ref)
         Merr = apply_sqrt_M(φr, Pks, err)
 
         resHF = res - DFTK.interpolate_blochwave(resLF, basis_g, basis_f)
+        println("HF : ", norm(resHF - keep_HF(res, basis_f, Ecut_g)))
+        println("test : ", norm(res - resHF) - norm(resLF))
         resHF = apply_inv_T(Pks, resHF)
         ΩpKres = apply_Ω(basis_f, resHF, φr, ham_f) .+ apply_K(basis_f, resHF, φr, ρr, occupation)
         ΩpKresLF = DFTK.interpolate_blochwave(ΩpKres, basis_f, basis_g)
         eLF, info = linsolve(f, pack(proj_tangent(resLF - ΩpKresLF, φ)), tol=1e-14;
                              orth=OrthogonalizeAndProject(packed_proj, pack(φ)))
+        eLF = unpack(eLF)
+        eLF = DFTK.interpolate_blochwave(eLF, basis_g, basis_f)
 
         # Apply M^+-1/2
-        MeLF = apply_sqrt_M(φr, Pks, unpack(eLF))
+        MeLF = apply_sqrt_M(φr, Pks, eLF)
         Mres = apply_inv_sqrt_M(basis_f, φr, Pks, res)
         # only 1 kpt for the moment
         Mschur = [Mres[1] + MeLF[1]]
 
         #  plot carots
-        G_energies = DFTK.G_vectors_cart(basis_f.kpoints[1])
-        normG = norm.(G_energies)
-        figure(i)
-        title("Ecut_g = $(Ecut_g)")
-        plot(Merr[1][sortperm(normG)], label="Merr")
-        plot(Mschur[1][sortperm(normG)], label="Mres_schur")
-        plot(Mres[1][sortperm(normG)], label="Mres")
-        xlabel("index of G by increasing norm")
-        legend()
+        #  G_energies = DFTK.G_vectors_cart(basis_f.kpoints[1])
+        #  normG = norm.(G_energies)
+        #  figure(i)
+        #  title("Ecut_g = $(Ecut_g)")
+        #  plot(Merr[1][sortperm(normG)], label="Merr")
+        #  plot(Mschur[1][sortperm(normG)], label="Mres_schur")
+        #  plot(Mres[1][sortperm(normG)], label="Mres")
+        #  xlabel("index of G by increasing norm")
+        #  legend()
 
         #  figure(10+i)
         #  plot(res[1][sortperm(normG)], label="Mres")
