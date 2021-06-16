@@ -94,10 +94,10 @@ for Ecut_g in Ecut_list
         basis_f = PlaneWaveBasis(model, Ecut_f; kgrid=kgrid)
 
         # compute residual and keep only LF
-        φr = DFTK.interpolate_blochwave(φ, basis_g, basis_f)
+        φr = DFTK.transfer_blochwave(φ, basis_g, basis_f)
         res = compute_scf_residual(basis_f, φr, occupation)
-        resLF = DFTK.interpolate_blochwave(res, basis_f, basis_g)
-        resLF_f = DFTK.interpolate_blochwave(resLF, basis_g, basis_f)
+        resLF = DFTK.transfer_blochwave(res, basis_f, basis_g)
+        resLF_f = DFTK.transfer_blochwave(resLF, basis_g, basis_f)
         println("LF : ", norm(resLF_f - keep_LF(res, basis_f, Ecut_g)))
 
         # compute hamiltonian
@@ -124,16 +124,16 @@ for Ecut_g in Ecut_list
         err = compute_error(basis_f, φr, φ_ref)
         Merr = apply_sqrt_M(φr, Pks, err)
 
-        resHF = res - DFTK.interpolate_blochwave(resLF, basis_g, basis_f)
+        resHF = res - DFTK.transfer_blochwave(resLF, basis_g, basis_f)
         println("HF : ", norm(resHF - keep_HF(res, basis_f, Ecut_g)))
         println("test : ", norm(res - resHF) - norm(resLF))
         resHF = apply_inv_T(Pks, resHF)
         ΩpKres = apply_Ω(basis_f, resHF, φr, ham_f) .+ apply_K(basis_f, resHF, φr, ρr, occupation)
-        ΩpKresLF = DFTK.interpolate_blochwave(ΩpKres, basis_f, basis_g)
+        ΩpKresLF = DFTK.transfer_blochwave(ΩpKres, basis_f, basis_g)
         eLF, info = linsolve(f, pack(proj_tangent(resLF - ΩpKresLF, φ)), tol=1e-14;
                              orth=OrthogonalizeAndProject(packed_proj, pack(φ)))
         eLF = unpack(eLF)
-        eLF = DFTK.interpolate_blochwave(eLF, basis_g, basis_f)
+        eLF = DFTK.transfer_blochwave(eLF, basis_g, basis_f)
 
         # Apply M^+-1/2
         MeLF = apply_sqrt_M(φr, Pks, eLF)
