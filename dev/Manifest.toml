@@ -86,11 +86,11 @@ version = "1.3.0"
 
 [[DFTK]]
 deps = ["AbstractFFTs", "BlockArrays", "Conda", "FFTW", "ForwardDiff", "Interpolations", "IterTools", "IterativeSolvers", "JSON", "Libxc", "LineSearches", "LinearAlgebra", "LinearMaps", "MPI", "Markdown", "NLsolve", "Optim", "OrderedCollections", "PeriodicTable", "Polynomials", "Primes", "Printf", "ProgressMeter", "PyCall", "Requires", "Roots", "SpecialFunctions", "StaticArrays", "Statistics", "TimerOutputs", "Unitful", "UnitfulAtomic", "spglib_jll"]
-git-tree-sha1 = "537a8cae78448386ac3d93018628bc2cb81a6af5"
-repo-rev = "a8c42c3eea887aae3ca8d10f169440ed7733cc9c"
+git-tree-sha1 = "33b4544677b78dfe34357dc38a3ed050916e8b7c"
+repo-rev = "0476563833deb1d8173ad12e20e12bb138fe2cb3"
 repo-url = "https://github.com/JuliaMolSim/DFTK.jl.git"
 uuid = "acf6eb54-70d9-11e9-0013-234b7a5f5337"
-version = "0.3.2"
+version = "0.3.3"
 
 [[DataAPI]]
 git-tree-sha1 = "dfb3b7e89e395be1e25c2ad6d7690dc29cc53b1d"
@@ -544,9 +544,9 @@ version = "0.2.5"
 
 [[StaticArrays]]
 deps = ["LinearAlgebra", "Random", "Statistics"]
-git-tree-sha1 = "57a9b3c69933e15e5b7041b6a57d1533ef1a9882"
+git-tree-sha1 = "745914ebcd610da69f3cb6bf76cb7bb83dcb8c9a"
 uuid = "90137ffa-7385-5640-81b9-e52037218182"
-version = "1.2.3"
+version = "1.2.4"
 
 [[Statistics]]
 deps = ["LinearAlgebra", "SparseArrays"]
