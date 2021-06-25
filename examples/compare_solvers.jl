@@ -17,26 +17,21 @@ basis = PlaneWaveBasis(model, Ecut; kgrid=kgrid)
 tol = 1e-12
 
 ## SCF
-println("---------------------------------------------")
-println("SCF")
 scfres_scf = self_consistent_field(basis, tol=tol,
                                    is_converged=DFTK.ScfConvergenceDensity(tol))
 
 ## Direct minimization
-println("---------------------------------------------")
-println("Direct minimization")
 scfres_dm = direct_minimization(basis, tol=tol)
 
 ## Newton algorithm
 # start not too far from the solution to ensure convergence : we use here the
-# solution of a 1 iteration SCF cycle
-println("---------------------------------------------")
-println("Newton algorithm")
-scfres_start = self_consistent_field(basis, tol=tol, maxiter=1,
-                                   is_converged=DFTK.ScfConvergenceDensity(tol))
-scfres_newton = newton(basis, ψ0=scfres_start.ψ, tol=tol)
+# solution of a single iteration SCF
+scfres_start = self_consistent_field(basis, maxiter=1)
+# remove virtual orbitals
+n_bands = div(model.n_electrons, DFTK.filled_occupation(model))
+ψ = [ψk[:,1:n_bands] for ψk in scfres_start.ψ]
+scfres_newton = newton(basis, ψ, tol=tol)
 
-println("---------------------------------------------")
 println("|ρ_newton - ρ_scf| = ", norm(scfres_newton.ρ - scfres_scf.ρ))
 println("|ρ_newton - ρ_dm| = ", norm(scfres_newton.ρ - scfres_dm.ρ))
 println("|ρ_scf - ρ_dm| = ", norm(scfres_scf.ρ - scfres_dm.ρ))

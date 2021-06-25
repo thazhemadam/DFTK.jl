@@ -90,8 +90,8 @@ function direct_minimization(basis::PlaneWaveBasis{T}, ψ0;
     occupation = [filled_occ * ones(T, n_bands) for ik = 1:Nk]
 
     ## pack and unpack
-    pack(φ) = pack_arrays(basis, φ)
-    unpack(x) = unpack_arrays(basis, x)
+    pack(ψ) = pack_ψ(basis, ψ)
+    unpack(x) = unpack_ψ(basis, x)
 
     # this will get updated along the iterations
     H = nothing
@@ -151,7 +151,8 @@ function direct_minimization(basis::PlaneWaveBasis{T}, ψ0;
                          optim_solver(P=P, precondprep=precondprep!, manifold=manif,
                                       linesearch=LineSearches.BackTracking()),
                          optim_options)
-    ψ = unpack(res.minimizer)
+    # return copy to ensure we have an array
+    ψ = copy(unpack(res.minimizer))
 
     ρ = compute_density(basis, ψ, occupation)
     energies, H = energy_hamiltonian(basis, ψ, occupation; ρ=ρ)
@@ -174,6 +175,7 @@ function direct_minimization(basis::PlaneWaveBasis{T}, ψ0;
         push!(eigenvalues, F.values)
         ψ[ik] .= ψ[ik] * F.vectors
     end
+
     εF = nothing  # does not necessarily make sense here, as the
                   # Aufbau property might not even be true
 
