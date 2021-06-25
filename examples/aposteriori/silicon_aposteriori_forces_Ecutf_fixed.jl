@@ -2,11 +2,10 @@
 # silicon system, in the form Ax=b
 #
 # Very basic setup, useful for testing
-import DFTK: apply_K, apply_Ω, newton_step, proj_tangent, pack_arrays, unpack_arrays, compute_scf_residual, OrthogonalizeAndProject
 using DFTK
+import DFTK: apply_K, apply_Ω, newton_step, pack_ψ, compute_projected_gradient
 using HDF5
 using PyPlot
-using KrylovKit
 
 include("aposteriori_forces.jl")
 include("aposteriori_tools.jl")
@@ -70,8 +69,6 @@ for Ecut_g in Ecut_list
 
     # packing routine on coarse grid
     pack(φ) = pack_arrays(basis_g, φ)
-    unpack(x) = unpack_arrays(basis_g, x)
-    packed_proj(δx, x) = pack(proj_tangent(unpack(δx), unpack(x)))
 
     ## solve eigenvalue system
     scfres_g = self_consistent_field(basis_g, tol=tol,
@@ -95,10 +92,8 @@ for Ecut_g in Ecut_list
 
         # compute residual and keep only LF
         φr = DFTK.transfer_blochwave(φ, basis_g, basis_f)
-        res = compute_scf_residual(basis_f, φr, occupation)
+        res = compute_projected_gradient(basis_f, φr, occupation)
         resLF = DFTK.transfer_blochwave(res, basis_f, basis_g)
-        resLF_f = DFTK.transfer_blochwave(resLF, basis_g, basis_f)
-        println("LF : ", norm(resLF_f - keep_LF(res, basis_f, Ecut_g)))
 
         # compute hamiltonian
         ρr = compute_density(basis_f, φr, occupation)
@@ -111,32 +106,19 @@ for Ecut_g in Ecut_list
             DFTK.precondprep!(Pks[ik], φr[ik])
         end
 
-        ## compute error on LF with Schur
-        function f(x)
-            x = unpack(x)
-            x = proj_tangent(x, φ)
-            Kx = apply_K(basis_g, x, φ, ρ_g, occupation)
-            Ωx = apply_Ω(basis_g, x, φ, ham_g)
-            x = proj_tangent(Kx .+ Ωx, φ)
-            pack(x)
-        end
-
+        ## compute error
         err = compute_error(basis_f, φr, φ_ref)
         Merr = apply_sqrt_M(φr, Pks, err)
 
         resHF = res - DFTK.transfer_blochwave(resLF, basis_g, basis_f)
-        println("HF : ", norm(resHF - keep_HF(res, basis_f, Ecut_g)))
-        println("test : ", norm(res - resHF) - norm(resLF))
         resHF = apply_inv_T(Pks, resHF)
         ΩpKres = apply_Ω(basis_f, resHF, φr, ham_f) .+ apply_K(basis_f, resHF, φr, ρr, occupation)
         ΩpKresLF = DFTK.transfer_blochwave(ΩpKres, basis_f, basis_g)
-        eLF, info = linsolve(f, pack(proj_tangent(resLF - ΩpKresLF, φ)), tol=1e-14;
-                             orth=OrthogonalizeAndProject(packed_proj, pack(φ)))
-        eLF = unpack(eLF)
-        eLF = DFTK.transfer_blochwave(eLF, basis_g, basis_f)
+        eLF = newton_step(basis_g, φ, pack(proj_tangent(resLF - ΩpKresLF, φ)), occupation)
+        e = DFTK.transfer_blochwave(eLF, basis_g, basis_f)
 
         # Apply M^+-1/2
-        MeLF = apply_sqrt_M(φr, Pks, eLF)
+        Me = apply_sqrt_M(φr, Pks, e)
         Mres = apply_inv_sqrt_M(basis_f, φr, Pks, res)
         # only 1 kpt for the moment
         Mschur = [Mres[1] + MeLF[1]]
