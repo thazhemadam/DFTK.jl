@@ -126,7 +126,7 @@ function transfer_blochwave(ψ_in, basis_in::PlaneWaveBasis{T},
     @assert all(basis_in.kpoints[ik].coordinate == basis_out.kpoints[ik].coordinate
                 for ik in 1:length(basis_in.kpoints))
 
-    ψ_out = empty(ψ_in)
+    ψ_out = []
 
     for (ik, kpt_out) in enumerate(basis_out.kpoints)
         n_bands = size(ψ_in[ik], 2)

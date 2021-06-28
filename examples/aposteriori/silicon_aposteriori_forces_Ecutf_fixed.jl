@@ -3,7 +3,7 @@
 #
 # Very basic setup, useful for testing
 using DFTK
-import DFTK: apply_K, apply_Ω, newton_step, pack_ψ, compute_projected_gradient
+import DFTK: apply_K, apply_Ω, newton_step, compute_projected_gradient, proj_tangent, proj_tangent!
 using HDF5
 using PyPlot
 
@@ -67,9 +67,6 @@ for Ecut_g in Ecut_list
     j = i
     basis_g = PlaneWaveBasis(model, Ecut_g; kgrid=kgrid)
 
-    # packing routine on coarse grid
-    pack(φ) = pack_arrays(basis_g, φ)
-
     ## solve eigenvalue system
     scfres_g = self_consistent_field(basis_g, tol=tol,
                                      determine_diagtol=DFTK.ScfDiagtol(diagtol_max=1e-10),
@@ -114,14 +111,15 @@ for Ecut_g in Ecut_list
         resHF = apply_inv_T(Pks, resHF)
         ΩpKres = apply_Ω(basis_f, resHF, φr, ham_f) .+ apply_K(basis_f, resHF, φr, ρr, occupation)
         ΩpKresLF = DFTK.transfer_blochwave(ΩpKres, basis_f, basis_g)
-        eLF = newton_step(basis_g, φ, pack(proj_tangent(resLF - ΩpKresLF, φ)), occupation)
+        rhs = resLF - ΩpKresLF
+        eLF = newton_step(basis_g, φ, rhs, occupation)
         e = DFTK.transfer_blochwave(eLF, basis_g, basis_f)
 
         # Apply M^+-1/2
         Me = apply_sqrt_M(φr, Pks, e)
         Mres = apply_inv_sqrt_M(basis_f, φr, Pks, res)
         # only 1 kpt for the moment
-        Mschur = [Mres[1] + MeLF[1]]
+        Mschur = [Mres[1] + Me[1]]
 
         #  plot carots
         #  G_energies = DFTK.G_vectors_cart(basis_f.kpoints[1])

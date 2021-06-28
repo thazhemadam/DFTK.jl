@@ -1,5 +1,6 @@
-import KrylovKit: ArnoldiIterator, Orthogonalizer, OrthonormalBasis, KrylovDefaults, orthogonalize!
-using KrylovKit
+using LinearMaps
+using IterativeSolvers
+import DFTK: pack_ψ, unpack_ψ
 
 ############################# ERROR AND RESIDUAL ###############################
 
@@ -148,37 +149,39 @@ end
 function apply_inv_sqrt_M(basis, φ, Pks, res)
     Nk = length(Pks)
 
-    pack(φ) = pack_arrays(basis, φ)
-    unpack(x) = unpack_arrays(basis, x)
-    packed_proj(δx, x) = pack(proj_tangent(unpack(δx), unpack(x)))
+    pack(φ) = pack_ψ(basis, φ)
+    unpack(x) = unpack_ψ(basis, x)
+
+    proj_tangent!(res, φ)
+    rhs = pack(res)
 
     function op(x)
         δφ = unpack(x)
         δφ = apply_sqrt_M(φ, Pks, δφ)
         pack(δφ)
     end
+    J = LinearMap{T}(op, size(rhs, 1))
+    Res = cg(J, rhs, verbose=false)
 
-    Res, info = linsolve(op, pack(proj_tangent(res, φ));
-                         tol=tol_krylov, verbosity=0,
-                         orth=OrthogonalizeAndProject(packed_proj, pack(φ)))
     unpack(Res)
 end
 
 function apply_inv_M(basis, φ, Pks, res)
     Nk = length(Pks)
 
-    pack(φ) = pack_arrays(basis, φ)
-    unpack(x) = unpack_arrays(basis, x)
-    packed_proj(δx, x) = pack(proj_tangent(unpack(δx), unpack(x)))
+    pack(φ) = pack_ψ(basis, φ)
+    unpack(x) = unpack_ψ(basis, x)
+
+    proj_tangent!(res, φ)
+    rhs = pack(res)
 
     function op(x)
         δφ = unpack(x)
         δφ = apply_M(φ, Pks, δφ)
         pack(δφ)
     end
+    J = LinearMap{T}(op, size(rhs, 1))
+    Res = cg(J, rhs, verbose=false)
 
-    Res, info = linsolve(op, pack(proj_tangent(res, φ));
-                         tol=tol_krylov, verbosity=0,
-                         orth=OrthogonalizeAndProject(packed_proj, pack(φ)))
     unpack(Res)
 end
