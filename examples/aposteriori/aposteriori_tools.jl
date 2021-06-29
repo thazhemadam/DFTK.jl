@@ -1,6 +1,5 @@
 using LinearMaps
 using IterativeSolvers
-import DFTK: pack_ψ, unpack_ψ
 
 ############################# ERROR AND RESIDUAL ###############################
 
@@ -25,163 +24,62 @@ function compute_error(basis, ϕ, ψ)
     err
 end
 
-############################## TANGENT SPACE TOOLS #############################
-
-## projection on frequencies higher than Ecut
-function keep_HF(δϕ, basis, Ecut)
-
-    Nk = length(basis.kpoints)
-
-    δφ = deepcopy(δϕ)
-
-    for ik in 1:Nk
-        kpt = basis.kpoints[ik]
-        G_vec = G_vectors(kpt)
-        recip_lat = kpt.model.recip_lattice
-        N = size(δφ[ik], 2)
-
-        for i in 1:N
-            for g in 1:length(δφ[ik][:,i])
-                if sum(abs2, recip_lat * (G_vec[g] + kpt.coordinate)) <= 2*Ecut
-                    δφ[ik][g,i] = 0
-                end
-            end
-        end
-    end
-
-    δφ
-end
-
-## projection on frequencies smaller than Ecut
-function keep_LF(δϕ, basis, Ecut)
-
-    Nk = length(basis.kpoints)
-
-    δφ = deepcopy(δϕ)
-
-    for ik in 1:Nk
-        kpt = basis.kpoints[ik]
-        G_vec = G_vectors(kpt)
-        recip_lat = kpt.model.recip_lattice
-        N = size(δφ[ik], 2)
-
-        for i in 1:N
-            for g in 1:length(δφ[ik][:,i])
-                if sum(abs2, recip_lat * (G_vec[g] + kpt.coordinate)) > 2*Ecut
-                    δφ[ik][g,i] = 0
-                end
-            end
-        end
-    end
-
-    δφ
-end
-
 ############################## CHANGES OF NORMS ################################
 
 ## T = -1/2 Δ + t
 
-function apply_inv_T(Pks, δφ)
-    Nk = length(Pks)
+# applies per kpoint and per band
 
-    ϕ = []
+apply_T(φk, Pk, δφnk, n) = (Pk.mean_kin[n] .+ Pk.kin) .* δφnk
+apply_sqrt_T(φk, Pk, δφnk, n) = sqrt.(Pk.mean_kin[n] .+ Pk.kin) .* δφnk
 
-    for ik = 1:Nk
-        ϕk = similar(δφ[ik])
-        N = size(δφ[ik], 2)
-        Pk = Pks[ik]
-        for i = 1:N
-            ϕk[:,i] .= 1 ./ (Pk.mean_kin[i] .+ Pk.kin) .* δφ[ik][:,i]
-        end
-        append!(ϕ, [ϕk])
-    end
-    ϕ
+apply_inv_T(φk, Pk, δφnk, n) = δφnk ./ (Pk.mean_kin[n] .+ Pk.kin)
+apply_inv_sqrt_T(φk, Pk, δφnk, n) = δφnk ./ sqrt.(Pk.mean_kin[n] .+ Pk.kin)
+
+function apply_M(φk, Pk, δφnk, n)
+    δφnk = proj_tangent_kpt(δφnk, φk)
+    δφnk = apply_sqrt_T(φk, Pk, δφnk, n)
+    δφnk = proj_tangent_kpt(δφnk, φk)
+    δφnk = apply_sqrt_T(φk, Pk, δφnk, n)
+    δφnk = proj_tangent_kpt(δφnk, φk)
 end
 
-function apply_inv_sqrt_T(Pks, δφ)
-    Nk = length(Pks)
-
-    ϕ = []
-
-    for ik = 1:Nk
-        ϕk = similar(δφ[ik])
-        N = size(δφ[ik], 2)
-        Pk = Pks[ik]
-        for i = 1:N
-            ϕk[:,i] .= 1 ./ sqrt.(Pk.mean_kin[i] .+ Pk.kin) .* δφ[ik][:,i]
-        end
-        append!(ϕ, [ϕk])
-    end
-    ϕ
+function apply_sqrt_M(φk, Pk, δφnk, n)
+    δφnk = proj_tangent_kpt(δφnk, φk)
+    δφnk = apply_sqrt_T(φk, Pk, δφnk, n)
+    δφnk = proj_tangent_kpt(δφnk, φk)
 end
 
-function apply_sqrt_T(Pks, δφ)
-    Nk = length(Pks)
-
-    ϕ = []
-
-    for ik = 1:Nk
-        ϕk = similar(δφ[ik])
-        N = size(δφ[ik], 2)
-        Pk = Pks[ik]
-        for i = 1:N
-            ϕk[:,i] .= sqrt.(Pk.mean_kin[i] .+ Pk.kin) .* δφ[ik][:,i]
-        end
-        append!(ϕ, [ϕk])
-    end
-    ϕ
-end
-
-function apply_M(φ, Pks, δφ)
-    δφ = proj_tangent(δφ, φ)
-    δφ = apply_sqrt_T(Pks, δφ)
-    δφ = proj_tangent(δφ, φ)
-    δφ = apply_sqrt_T(Pks, δφ)
-    δφ = proj_tangent(δφ, φ)
-end
-
-function apply_sqrt_M(φ, Pks, δφ)
-    δφ = proj_tangent(δφ, φ)
-    δφ = apply_sqrt_T(Pks, δφ)
-    δφ = proj_tangent(δφ, φ)
-end
-
-function apply_inv_sqrt_M(basis, φ, Pks, res)
-    Nk = length(Pks)
-
-    pack(φ) = pack_ψ(basis, φ)
-    unpack(x) = unpack_ψ(basis, x)
-
-    proj_tangent!(res, φ)
-    rhs = pack(res)
-
+function apply_inv_M(φk, Pk, δφnk, n)
+    δφnk = proj_tangent_kpt(δφnk, φk)
     function op(x)
-        δφ = unpack(x)
-        δφ = apply_sqrt_M(φ, Pks, δφ)
-        pack(δφ)
+        apply_M(φk, Pk, x, n)
     end
-    J = LinearMap{T}(op, size(rhs, 1))
-    Res = cg(J, rhs, verbose=false)
-
-    unpack(Res)
+    J = LinearMap{eltype(φk)}(op, size(δφnk, 1))
+    δφnk = cg(J, δφnk, verbose=false, reltol=1e-10/norm(δφnk))
+    proj_tangent_kpt(δφnk, φk)
 end
 
-function apply_inv_M(basis, φ, Pks, res)
-    Nk = length(Pks)
-
-    pack(φ) = pack_ψ(basis, φ)
-    unpack(x) = unpack_ψ(basis, x)
-
-    proj_tangent!(res, φ)
-    rhs = pack(res)
-
+function apply_inv_sqrt_M(φk, Pk, δφnk, n)
+    δφnk = proj_tangent_kpt(δφnk, φk)
     function op(x)
-        δφ = unpack(x)
-        δφ = apply_M(φ, Pks, δφ)
-        pack(δφ)
+        apply_sqrt_M(φk, Pk, x, n)
     end
-    J = LinearMap{T}(op, size(rhs, 1))
-    Res = cg(J, rhs, verbose=false)
+    J = LinearMap{eltype(φk)}(op, size(δφnk, 1))
+    δφnk = cg(J, δφnk, verbose=false, reltol=1e-10/norm(δφnk))
+    proj_tangent_kpt(δφnk, φk)
+end
 
-    unpack(Res)
+# applies for full orbitals
+
+# /!\ A(φk, Pk, δφnk, n) should be one of the eight functions above /!\
+function apply_metric(φ, P, δφ, A::Function)
+    map(enumerate(δφ)) do (ik, δφk)
+        Aδφk = similar(δφk)
+        φk = φ[ik]
+        for n = 1:size(δφk,2)
+            Aδφk[:,n] = A(φk, P[ik], δφk[:,n], n)
+        end
+        Aδφk
+    end
 end
