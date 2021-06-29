@@ -1,9 +1,9 @@
 # Newton's algorithm to solve SCF equations
 #
 # Newton algorithm consist of iterating over density matrices like
-#       P = P - δP, with proper renormalization
-# where δP solves
-#       (Ω+K)δP = [P, [P, H(P)]] (residual)
+#       P <- P - δP, with additional renormalization
+# where δP solves ([1])
+#       (Ω+K)δP = [P, [P, H(P)]]
 # where (Ω+K) if the constrained Hessian of the energy. It is
 # defined as a super operator on the space tangent to the constraints
 # manifold at point P_∞, the solution of our problem.
@@ -11,11 +11,19 @@
 #   - Ω represents the influence of the curvature of the manifold :
 #         ΩδP = -[P_∞, [H(P_∞), δP]].
 #     In practice, we dont have access to P_∞ so we just use the current P.
-#     Another way to see Ω is to define the following extension and retraction operators
+#     Another way to see Ω is as the four-point independent-particle
+#     susceptibility. Indeed, if we define the following extension and
+#     retraction operators
 #       - E : builds a density matrix Eρ given a density ρ via Eρ(r,r') = δ(r,r')ρ(r),
 #       - R : builds a density ρ given a density matrix O via ρ(r) = O(r,r),
-#     then we have the relation χ0 = -R(Ω^-1)E, where χ0 is the independent-particle
-#     susceptibility and returns δρ from a given δV.
+#     then we have the relation χ0₂ = -R(Ω₄^-1)E, where χ0₂ is the two_point
+#     independent-particle susceptibility (it returns δρ from a given δV) and
+#     Ω₄ is the four-point independent-particle susceptibility.
+#
+# For further details :
+# [1] Eric Cancès, Gaspard Kemlin, Antoine Levitt. Convergence analysis of
+#     direct minimization and self-consistent iterations. SIAM Journal of Matrix
+#     Analysis and Applications, 42(1):243–274 (2021)
 #
 # We presented the algorithm in the density matrix framework, but in practice,
 # we implement it with orbitals.
@@ -26,55 +34,35 @@
 # δψ[ik][:, i] = δψi for each k-point.
 # In this framework :
 #   - computing Ωδψ can be done analytically with the formula
-#         Ωδψi = H*δψi - Σj (<ψj|H|δψi> ψj + <ψj|δψi> Hψj)/2 - Σj λji δψj
-#     where λij = <ψi|H|ψj>. This is one way among other to extend the
+#         Ωδψi = H*δψi - Σj λji δψj
+#     where λij = <ψi|H|ψj>. This is one way among others to extend the
 #     definition of ΩδP = -[P_∞, [H(P_∞), δP]] to any point P on the manifold --
-#     we chose this one because it is self-adjoint;
-#   - computing Kδψ can be done by constructing the dρ associated with dψ, then
-#     using the exchange-correlation kernel to compute the associated dV, then
-#     acting with dV on the ψ and projecting on the tangent space;
-#   - to perform Newton iterations, we solve (Ω+K)δψ = Hψ-λψ and then perform
-#     ψ = ψ - δψ, with proper orthonormalization.
-#
-# For further details :
-# Eric Cancès, Gaspard Kemlin, Antoine Levitt. Convergence analysis of
-# direct minimization and self-consistent iterations. SIAM Journal of Matrix
-# Analysis and Applications, 42(1):243–274 (2021)
+#     we chose this one because it makes Ω self-adjoint for the Frobenius scalar
+#     product;
+#   - computing Kδψ can be done by constructing the δρ associated with δψ, then
+#     using the exchange-correlation kernel to compute the associated δV, then
+#     acting with δV on the ψ and projecting on the tangent space.
 
 using LinearMaps
 using IterativeSolvers
 
-# Tools
-
-"""
-    compute_projected_gradient(basis::PlaneWaveBasis, ψ, occupation)
-
-Compute the residual associated to a set of planewave ψ, that is to say
-H(ψ)*ψ - ψ*λ where λ is the set of Rayleigh coefficients associated to the ψ.
-"""
+#  Compute the gradient of the energy, projected on the space tangent to ψ, that
+#  is to say H(ψ)*ψ - ψ*λ where λ is the set of Rayleigh coefficients associated
+#  to the ψ.
 function compute_projected_gradient(basis::PlaneWaveBasis, ψ, occupation)
-    Nk = length(basis.kpoints)
     ρ = compute_density(basis, ψ, occupation)
     _, H = energy_hamiltonian(basis, ψ, occupation; ρ=ρ)
 
-    [proj_tangent_kpt(H.blocks[ik]*ψ[ik], ψ[ik]) for ik = 1:Nk]
+    [proj_tangent_kpt(H.blocks[ik] * ψ[ik], ψ[ik])
+     for ik = 1:length(basis.kpoints)]
 end
 
-"""
-    proj_tangent_kpt(δψk, ψk)
-
-Computation the projection of δψk onto the tangent space defined at ψk, where
-δψk and ψk are defined at the same kpoint.
-"""
-proj_tangent_kpt(δψk, ψk) = δψk - ψk * (ψk'δψk)
+# Projections on the space tangent to ψ
 function proj_tangent_kpt!(δψk, ψk)
+    # δψk = δψk - ψk * (ψk'δψk)
     mul!(δψk, ψk, ψk'δψk, -1, 1)
 end
-"""
-    proj_tangent(δψ, ψ)
-
-Computation the projection of δψ onto the tangent space defined at ψ.
-"""
+proj_tangent_kpt(δψk, ψk) = proj_tangent_kpt!(copy(δψk), ψk)
 function proj_tangent(δψ, ψ)
     [proj_tangent_kpt(δψ[ik], ψ[ik]) for ik = 1:size(ψ,1)]
 end
@@ -82,45 +70,35 @@ function proj_tangent!(δψ, ψ)
     [proj_tangent_kpt!(δψ[ik], ψ[ik]) for ik = 1:size(ψ,1)]
 end
 
-# Operators
-
-"""
-    apply_Ω(basis::PlaneWaveBasis, δψ, ψ, H)
-
-Apply Ω to an element in the tangent space to ψ.
-"""
-function apply_Ω(basis::PlaneWaveBasis, δψ, ψ, H)
-    Nk = length(basis.kpoints)
-
-    Hψ = [H.blocks[ik] * ψ[ik] for ik = 1:Nk]
-    ψHψ = [(ψ[ik]*Hψ[ik]' + Hψ[ik]*ψ[ik]') / 2 for ik = 1:Nk]
-    λ = [ψ[ik]'Hψ[ik] for ik = 1:Nk]
+function apply_Ω(δψ, ψ, H::Hamiltonian, Λ)
 
     δψ = proj_tangent(δψ, ψ)
-    Ωδψ = [H.blocks[ik] * δψ[ik] - ψHψ[ik] * δψ[ik] for ik = 1:Nk]
-    Ωδψ = Ωδψ - [δψ[ik]*λ[ik] for ik = 1:Nk]
+    Ωδψ = map(enumerate(δψ)) do (ik, δψk)
+        Hk = H.blocks[ik]
+        Λk = Λ[ik]
+
+        Ωδψk = Hk * δψk - δψk * Λk
+    end
+
     proj_tangent!(Ωδψ, ψ)
 end
 
-"""
-    compute_dρ(ψ, δψ)
+# The variation in density corresponds to a variation in the orbitals.
+@views function compute_δρ(basis::PlaneWaveBasis{T}, ψ, δψ,
+                           occupation, δoccupation=0 .* occupation) where T
+    n_spin = basis.model.n_spin_components
 
-Compute δρ = Σi ψi*conj(δψi) + conj(ψi)*δψi
-"""
-@views function compute_dρ(basis::PlaneWaveBasis, ψ, δψ, ρ, occupation)
-                           n_spin = basis.model.n_spin_components
-
-    δρ_fourier = zeros(complex(eltype(ρ)), size(ρ)...)
+    δρ_fourier = zeros(complex(T), basis.fft_size..., n_spin)
     for (ik, kpt) in enumerate(basis.kpoints)
-        δρk = zeros(eltype(ρ), basis.fft_size)
-        for i = 1:size(ψ[ik], 2)
-            ψki_real = G_to_r(basis, kpt, ψ[ik][:, i])
-            δψki_real = G_to_r(basis, kpt, δψ[ik][:, i])
-            δρk .+= occupation[ik][i] .* (conj.(ψki_real) .* δψki_real +
-                                          conj.(δψki_real) .* ψki_real)
+        δρk = zeros(T, basis.fft_size)
+        for n = 1:size(ψ[ik], 2)
+            ψnk_real = G_to_r(basis, kpt, ψ[ik][:, n])
+            δψnk_real = G_to_r(basis, kpt, δψ[ik][:, n])
+            δρk .+= occupation[ik][n] .* (conj.(ψnk_real) .* δψnk_real +
+                                          conj.(δψnk_real) .* ψnk_real)
+            δρk .+= δoccupation[ik][n] .* abs2.(ψnk_real)
         end
         # Check sanity in the density, we should have ∫δρ = 0
-        T = real(eltype(δρk))
         if abs(sum(δρk)) > sqrt(eps(T))
             @warn("Mismatch in δρ", sum_δρ=sum(δρk))
         end
@@ -135,47 +113,31 @@ Compute δρ = Σi ψi*conj(δψi) + conj(ψi)*δψi
     G_to_r(basis, δρ_fourier) ./ count
 end
 
-"""
-    apply_K(basis::PlaneWaveBasis, δψ, ψ, ρ, occupation)
-
-Compute the application of K to an element in the space tangent to ψ.
-"""
-function apply_K(basis::PlaneWaveBasis, δψ, ψ, ρ, occupation)
-    Nk = length(basis.kpoints)
+@views function apply_K(basis::PlaneWaveBasis, δψ, ψ, ρ, occupation)
 
     δψ = proj_tangent(δψ, ψ)
-    dρ = compute_dρ(basis, ψ, δψ, ρ, occupation)
-    dV = apply_kernel(basis, dρ; ρ=ρ)
+    δρ = compute_δρ(basis, ψ, δψ, occupation)
+    δV = apply_kernel(basis, δρ; ρ=ρ)
 
-    Kδψ = []
-    for ik = 1:Nk
+    Kδψ = map(enumerate(ψ)) do (ik, ψk)
         kpt = basis.kpoints[ik]
-        ψk = ψ[ik]
-        dVψk = similar(ψk)
+        δVψk = similar(ψk)
 
-        for i = 1:size(ψk, 2)
-            ψk_r = G_to_r(basis, kpt, ψk[:,i])
-            dVψk_r = dV[:, :, :, kpt.spin] .* ψk_r
-            dVψk[:, i] = r_to_G(basis, kpt, dVψk_r)
+        for n = 1:size(ψk, 2)
+            ψnk_real = G_to_r(basis, kpt, ψk[:,n])
+            δVψnk_real = δV[:, :, :, kpt.spin] .* ψnk_real
+            δVψk[:, n] = r_to_G(basis, kpt, δVψnk_real)
         end
-        push!(Kδψ, dVψk)
+        δVψk
     end
-    # ensure proper projection onto the tangent space
+    # ensure projection onto the tangent space
     proj_tangent!(Kδψ, ψ)
 end
 
-# Callback and convergence
-
-"""
-Flag convergence as soon as density change drops below tolerance
-"""
 function NewtonConvergenceDensity(tolerance)
     info -> (norm(info.ρ_next - info.ρ) * sqrt(info.basis.dvol) < tolerance)
 end
 
-"""
-Default callback function for `newton`, which prints a convergence table
-"""
 function NewtonDefaultCallback()
     prev_energies = nothing
     function callback(info)
@@ -212,42 +174,28 @@ function NewtonDefaultCallback()
     end
 end
 
-# Newton algorithm
-
 """
-    newton_step(basis::PlaneWaveBasis, ψ, res, occupation;
-                tol_cg=1e-10, verbose=false)
+    solve_ΩplusK(basis::PlaneWaveBasis{T}, ψ, res, occupation;
+                 tol_cg=1e-10, verbose=false) where T
 
-Perform a Newton step : we take as given a planewave set ψ and we return the
-Newton step δψ and the updated state ψ - δψ
-(after proper orthonormalization) where δψ solves Jac * δψ = res
-and Jac is the Jacobian of the projected gradient descent : Jac = Ω+K.
-δψ is an element of the tangent space at ψ (set to ψ if not specified in newton function).
+Return δψ where (Ω+K) δψ = rhs
 """
-function newton_step(basis::PlaneWaveBasis, ψ, res, occupation;
-                     tol_cg=1e-10, verbose=false)
+function solve_ΩplusK(basis::PlaneWaveBasis{T}, ψ, rhs, occupation;
+                     tol_cg=1e-10, verbose=false) where T
 
-    N = size(ψ[1], 2)
     Nk = length(basis.kpoints)
 
     # compute quantites at the point which define the tangent space
     ρ = compute_density(basis, ψ, occupation)
-    energies, H = energy_hamiltonian(basis, ψ, occupation; ρ=ρ)
+    _, H = energy_hamiltonian(basis, ψ, occupation; ρ=ρ)
 
-    # packing routines
-    # some care is needed here : K is real-linear but not complex-linear because
-    # of the computation of δρ from δψ. To overcome this difficulty, instead of
-    # seeing the jacobian as an operator from C^Nb to C^Nb, we see it as an
-    # operator from R^2Nb to R^2Nb. In practice, this is done with the
-    # reinterpret function from julia. Thus, we are sure that the map we define
-    # below apply_jacobian is self-adjoint.
-    T = eltype(basis)
-    pack(ψ) = Array(reinterpret(T, pack_ψ(basis, ψ)))
-    unpack(x) = unpack_ψ(basis, reinterpret(Complex{T}, x))
+    # pack and unpack
+    pack(ψ) = pack_ψ(basis, ψ)
+    unpack(x) = unpack_ψ(basis, x)
 
-    # project res on the good tangent space before starting
-    proj_tangent!(res, ψ)
-    rhs = pack(res)
+    # project rhs on the tangent space before starting
+    proj_tangent!(rhs, ψ)
+    rhs_pack = pack(rhs)
 
     # preconditioner
     Pks = [PreconditionerTPA(basis, kpt) for kpt in basis.kpoints]
@@ -262,17 +210,24 @@ function newton_step(basis::PlaneWaveBasis, ψ, res, occupation;
         x .= pack(Pδψ)
     end
 
+    # Rayleigh-coefficients
+    Λ = map(enumerate(ψ)) do (ik, ψk)
+        Hk = H.blocks[ik]
+        Hψk = Hk * ψk
+        ψk'Hψk
+    end
+
     # mapping of the linear system on the tangent space
-    function apply_jacobian(x)
+    function ΩpK(x)
         δψ = unpack(x)
         Kδψ = apply_K(basis, δψ, ψ, ρ, occupation)
-        Ωδψ = apply_Ω(basis, δψ, ψ, H)
+        Ωδψ = apply_Ω(δψ, ψ, H, Λ)
         pack(Ωδψ + Kδψ)
     end
-    J = LinearMap{T}(apply_jacobian, size(rhs, 1))
+    J = LinearMap{T}(ΩpK, size(rhs_pack, 1))
 
-    # solve (Ω+K) δψ = res on the tangent space with CG
-    δψ = cg(J, rhs, Pl=FunctionPreconditioner(f_ldiv!),
+    # solve (Ω+K) δψ = rhs on the tangent space with CG
+    δψ = cg(J, rhs_pack, Pl=FunctionPreconditioner(f_ldiv!),
             reltol=tol_cg/norm(rhs), verbose=verbose)
 
     unpack(δψ)
@@ -284,7 +239,8 @@ end
            callback=NewtonDefaultCallback(),
            is_converged=NewtonConvergenceDensity(tol))
 
-Newton algorithm. Be careful that the starting needs to be not too far from the solution.
+Newton algorithm. Be careful that the starting point needs to be not too far
+from the solution.
 """
 function newton(basis::PlaneWaveBasis{T}, ψ0;
                 tol=1e-6, tol_cg=1e-10, maxiter=20, verbose=false,
@@ -297,14 +253,14 @@ function newton(basis::PlaneWaveBasis{T}, ψ0;
     @assert model.temperature == 0 # temperature is not yet supported
     filled_occ = filled_occupation(model)
     n_spin = basis.model.n_spin_components
-    N = div(div(model.n_electrons, filled_occ), n_spin)
+    n_bands = div(div(model.n_electrons, filled_occ), n_spin)
 
     # number of kpoints and occupation
     Nk = length(basis.kpoints)
-    occupation = [filled_occ * ones(T, N) for ik = 1:Nk]
+    occupation = [filled_occ * ones(T, n_bands) for ik = 1:Nk]
 
     # check that there are no virtual orbitals
-    @assert N == size(ψ0[1],2)
+    @assert n_bands == size(ψ0[1],2)
 
     # iterators
     err = Inf
@@ -322,9 +278,10 @@ function newton(basis::PlaneWaveBasis{T}, ψ0;
 
         # compute next step
         res = compute_projected_gradient(basis, ψ, occupation)
-        δψ = newton_step(basis, ψ, res, occupation; tol_cg=tol_cg,
-                         verbose=verbose)
-        ψ = [ortho_qr(ψ[ik] - δψ[ik]) for ik = 1:Nk]
+        # solve (Ω+K) δψ = -res so that the Newton step is ψ <- ψ+δψ
+        δψ = solve_ΩplusK(basis, ψ, -res, occupation; tol_cg=tol_cg,
+                          verbose=verbose)
+        ψ = map(1:Nk) do ik ortho_qr(ψ[ik] + δψ[ik]) end
 
         # callback
         ρ_next = compute_density(basis, ψ, occupation)

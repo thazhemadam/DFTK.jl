@@ -89,7 +89,7 @@ function direct_minimization(basis::PlaneWaveBasis{T}, ψ0;
     end
     occupation = [filled_occ * ones(T, n_bands) for ik = 1:Nk]
 
-    ## pack and unpack
+    # pack and unpack
     pack(ψ) = pack_ψ(basis, ψ)
     unpack(x) = unpack_ψ(basis, x)
 
@@ -151,7 +151,7 @@ function direct_minimization(basis::PlaneWaveBasis{T}, ψ0;
                          optim_solver(P=P, precondprep=precondprep!, manifold=manif,
                                       linesearch=LineSearches.BackTracking()),
                          optim_options)
-    # return copy to ensure we have an array
+    # return copy to ensure we have a plain array
     ψ = copy(unpack(res.minimizer))
 
     ρ = compute_density(basis, ψ, occupation)

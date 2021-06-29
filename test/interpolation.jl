@@ -1,5 +1,5 @@
 using Test
-using DFTK: interpolate_density
+using DFTK: interpolate_density, transfer_blochwave
 using LinearAlgebra
 
 include("testcases.jl")
@@ -29,7 +29,7 @@ include("testcases.jl")
     @test maximum(abs.(ρout2 - ρout1)) < .01
 end
 
-@testset "Interpolation of blochwave" begin
+@testset "Transfer of blochwave" begin
     tol = 1e-7
 
     Si = ElementPsp(silicon.atnum, psp=load_psp(silicon.psp))
@@ -38,20 +38,18 @@ end
     Ecut = 5
     basis = PlaneWaveBasis(model, Ecut; kgrid=kgrid)
 
-    # Run nlsolve without guess
-    ρ0 = zeros(basis.fft_size..., 1)
-    ψ = self_consistent_field(basis; ρ=ρ0, tol=tol, callback=info->nothing).ψ
+    ψ = self_consistent_field(basis; tol=tol, callback=info->nothing).ψ
 
-    ## Testing interpolations from basis to a bigger_basis and backwards
+    ## Testing transfers from basis to a bigger_basis and backwards
 
-    # Interpolation to bigger basis then same basis (both interpolations are
+    # Transfer to bigger basis then same basis (both interpolations are
     # tested then)
     bigger_basis = PlaneWaveBasis(model, Ecut+5; kgrid=kgrid)
     ψ_b = transfer_blochwave(ψ, basis, bigger_basis)
     ψ_bb = transfer_blochwave(ψ_b, bigger_basis, basis)
     @test norm(ψ-ψ_bb) < eps(eltype(basis))
 
-    # Interpolation between same basis (not very useful, but is worth testing)
+    # Transfer between same basis (not very useful, but is worth testing)
     bigger_basis = PlaneWaveBasis(model, Ecut; kgrid=kgrid)
     ψ_b = transfer_blochwave(ψ, basis, bigger_basis)
     ψ_bb = transfer_blochwave(ψ_b, bigger_basis, basis)
