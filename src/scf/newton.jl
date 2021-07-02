@@ -176,12 +176,12 @@ end
 
 """
     solve_ΩplusK(basis::PlaneWaveBasis{T}, ψ, res, occupation;
-                 tol_cg=1e-10, verbose=false) where T
+                 K_coef=1, tol_cg=1e-10, verbose=false) where T
 
 Return δψ where (Ω+K) δψ = rhs
 """
 function solve_ΩplusK(basis::PlaneWaveBasis{T}, ψ, rhs, occupation;
-                     tol_cg=1e-10, verbose=false) where T
+                      K_coef=1, tol_cg=1e-10, verbose=false) where T
 
     Nk = length(basis.kpoints)
 
@@ -222,7 +222,7 @@ function solve_ΩplusK(basis::PlaneWaveBasis{T}, ψ, rhs, occupation;
         δψ = unpack(x)
         Kδψ = apply_K(basis, δψ, ψ, ρ, occupation)
         Ωδψ = apply_Ω(δψ, ψ, H, Λ)
-        pack(Ωδψ + Kδψ)
+        pack(Ωδψ + K_coef * Kδψ)
     end
     J = LinearMap{T}(ΩpK, size(rhs_pack, 1))
 

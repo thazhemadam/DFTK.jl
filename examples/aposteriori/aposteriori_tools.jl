@@ -1,5 +1,6 @@
 using LinearMaps
 using IterativeSolvers
+using Statistics
 
 ############################# ERROR AND RESIDUAL ###############################
 
@@ -30,11 +31,11 @@ end
 
 # applies per kpoint and per band
 
-apply_T(φk, Pk, δφnk, n) = (Pk.mean_kin[n] .+ Pk.kin) .* δφnk
-apply_sqrt_T(φk, Pk, δφnk, n) = sqrt.(Pk.mean_kin[n] .+ Pk.kin) .* δφnk
+apply_T(φk, Pk, δφnk, n) = (Pk.mean_kin[:, n] .+ Pk.kin) .* δφnk
+apply_sqrt_T(φk, Pk, δφnk, n) = sqrt.(Pk.mean_kin[:, n] .+ Pk.kin) .* δφnk
 
-apply_inv_T(φk, Pk, δφnk, n) = δφnk ./ (Pk.mean_kin[n] .+ Pk.kin)
-apply_inv_sqrt_T(φk, Pk, δφnk, n) = δφnk ./ sqrt.(Pk.mean_kin[n] .+ Pk.kin)
+apply_inv_T(φk, Pk, δφnk, n) = δφnk ./ (Pk.mean_kin[:, n] .+ Pk.kin)
+apply_inv_sqrt_T(φk, Pk, δφnk, n) = δφnk ./ sqrt.(Pk.mean_kin[:, n] .+ Pk.kin)
 
 function apply_M(φk, Pk, δφnk, n)
     δφnk = proj_tangent_kpt(δφnk, φk)
@@ -82,4 +83,34 @@ function apply_metric(φ, P, δφ, A::Function)
         end
         Aδφk
     end
+end
+
+"""
+Extension of Diagonal to nonlocal operators
+"""
+function LinearAlgebra.Diagonal(opnl::DFTK.NonlocalOperator)
+    [dot(p, opnl.D * p) for p in eachrow(opnl.P)]
+end
+
+"""
+Compute the average of the local potential and the nonlocal potential
+"""
+function compute_avg(basis::PlaneWaveBasis, H::Hamiltonian)
+
+    # average of the local part of the potential of the Hamiltonian
+    avg_local_pot = mean(DFTK.total_local_potential(H))
+
+    # adding the average on the nonlocal part of the potential depending on the
+    # k point
+    total_pot_avg = []
+    for (ik, kpt) in enumerate(basis.kpoints)
+        non_local_op = [op for op in H.blocks[ik].operators
+                        if (op isa DFTK.NonlocalOperator)][1]
+        avg_non_local_op = Diagonal(non_local_op)
+
+        # compute potential average if used in the perturbation
+        total_pot_avgk = avg_local_pot .+ avg_non_local_op
+        push!(total_pot_avg, total_pot_avgk)
+    end
+    total_pot_avg
 end
