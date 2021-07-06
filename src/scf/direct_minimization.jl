@@ -79,8 +79,8 @@ function direct_minimization(basis::PlaneWaveBasis{T}, ψ0;
     @assert model.spin_polarization in (:none, :spinless, :collinear)
     @assert model.temperature == 0 # temperature is not yet supported
     filled_occ = filled_occupation(model)
-    n_spin = basis.model.n_spin_components
-    n_bands = div(div(model.n_electrons, filled_occ), n_spin)
+    n_spin = model.n_spin_components
+    n_bands = div(model.n_electrons, n_spin * filled_occ)
     Nk = length(basis.kpoints)
 
     if ψ0 === nothing
@@ -89,9 +89,10 @@ function direct_minimization(basis::PlaneWaveBasis{T}, ψ0;
     end
     occupation = [filled_occ * ones(T, n_bands) for ik = 1:Nk]
 
-    # pack and unpack
-    pack(ψ) = pack_ψ(basis, ψ)
-    unpack(x) = unpack_ψ(basis, x)
+    # we need to copy the reinterpret array here to not raise errors in Optim.jl
+    # TODO raise this issue in Optim.jl
+    pack(ψ) = copy(reinterpret_real(pack_ψ(basis, ψ)))
+    unpack(x) = unpack_ψ(basis, reinterpret_complex(x))
 
     # this will get updated along the iterations
     H = nothing
@@ -152,20 +153,7 @@ function direct_minimization(basis::PlaneWaveBasis{T}, ψ0;
                                       linesearch=LineSearches.BackTracking()),
                          optim_options)
     # return copy to ensure we have a plain array
-    ψ = copy(unpack(res.minimizer))
-
-    ρ = compute_density(basis, ψ, occupation)
-    energies, H = energy_hamiltonian(basis, ψ, occupation; ρ=ρ)
-    φ = []
-    for ik = 1:length(ψ)
-        φk = zeros(ComplexF64, size(ψ[ik]))
-        for i = 1:(size(ψ[ik], 2))
-            φk[:,i] = ψ[ik][:,i]
-        end
-        push!(φ, φk)
-    end
-    info = (stage=:finalize, ψ=φ, ham=H, basis=basis, occupation=occupation)
-    callback(info)
+    ψ = deepcopy(unpack(res.minimizer))
 
     # Final Rayleigh-Ritz (not strictly necessary, but sometimes useful)
     eigenvalues = []
