@@ -8,7 +8,7 @@ import DFTK: proj_tangent, proj_tangent!, proj_tangent_kpt
 using HDF5
 using PyPlot
 
-include("aposteriori_forces.jl")
+include("forces_FD.jl")
 include("aposteriori_tools.jl")
 include("aposteriori_callback.jl")
 
@@ -141,9 +141,9 @@ for Ecut_g in Ecut_list
         nfig = Int(basis_g.Ecut)
 
         # approximate forces f-f*
-        f_err = compute_forces_estimate(basis_f, err, φr, occupation)
-        f_res = compute_forces_estimate(basis_f, Mres, φr, occupation)
-        f_schur = compute_forces_estimate(basis_f, e_schur, φr, occupation)
+        f_err = δforces(basis_ref, occupation, φr, proj_tangent(err, φr))
+        f_res = δforces(basis_ref, occupation, φr, Mres)
+        f_schur = δforces(basis_ref, occupation, φr, e_schur)
 
         ##  plot carots
         #  G_energies = DFTK.G_vectors_cart(basis_f.kpoints[1])
@@ -162,13 +162,13 @@ for Ecut_g in Ecut_list
         #  xlabel("index of G by increasing norm")
         #  legend()
 
-        diff_list[i,j] = abs(f_g[1][2][1]-f_ref[1][2][1])
-        approx_list_err[i,j] = abs(f_err[1][2][1])
-        approx_list_res[i,j] = abs(f_res[1][2][1])
-        approx_list_schur[i,j] = abs(f_schur[1][2][1])
-        diff_list_err[i,j] = abs(f_g[1][2][1]-f_ref[1][2][1]-f_err[1][2][1])
-        diff_list_res[i,j] = abs(f_g[1][2][1]-f_ref[1][2][1]-f_res[1][2][1])
-        diff_list_schur[i,j] = abs(f_g[1][2][1]-f_ref[1][2][1]-f_schur[1][2][1])
+        diff_list[i,j] = norm(f_g-f_ref)
+        approx_list_err[i,j] = norm(f_err)
+        approx_list_res[i,j] = norm(f_res)
+        approx_list_schur[i,j] = norm(f_schur)
+        diff_list_err[i,j] = norm(f_g-f_ref-f_err)
+        diff_list_res[i,j] = norm(f_g-f_ref-f_res)
+        diff_list_schur[i,j] = norm(f_g-f_ref-f_schur)
         Mres_list[i] = norm(Mres)
         res_list[i] = norm(res)
         err_list[i] = norm(err)
