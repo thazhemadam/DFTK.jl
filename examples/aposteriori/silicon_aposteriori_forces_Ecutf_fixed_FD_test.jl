@@ -22,8 +22,8 @@ atoms = [Si => [ones(3)/8 + [0.22, -0.28, 0.35] ./ 20, -ones(3)/8]]
 
 #  model = Model(lattice; atoms=atoms, terms=[Kinetic(), AtomicLocal(), AtomicNonlocal()])
 model = model_LDA(lattice, atoms)
-kgrid = [2,2,2]  # k-point grid (Regular Monkhorst-Pack grid)
-Ecut_ref = 60   # kinetic energy cutoff in Hartree
+kgrid = [1,1,1]  # k-point grid (Regular Monkhorst-Pack grid)
+Ecut_ref = 30   # kinetic energy cutoff in Hartree
 tol = 1e-10
 basis_ref = PlaneWaveBasis(model, Ecut_ref; kgrid=kgrid)
 
@@ -45,13 +45,12 @@ f_ref = compute_forces(scfres_ref)
 
 ## min and max Ecuts for the two grid solution
 Ecut_min = 10
-Ecut_max = 50
+Ecut_max = 20
 nfig = 1
 
 Ecut_list = Ecut_min:5:Ecut_max
 K = length(Ecut_list)
 diff_list = zeros((K,K))
-diff_newton_list = zeros((K,K))
 approx_list_res = zeros((K,K))
 approx_list_err = zeros((K,K))
 approx_list_schur = zeros((K,K))
@@ -142,14 +141,18 @@ for Ecut_g in Ecut_list
         global nfig
         nfig = Int(basis_g.Ecut)
 
-        ## newton
-        scfres_newton = newton(basis_f, φr, maxiter=1)
-        f_newton = compute_forces(scfres_newton)
-
         # approximate forces f-f*
-        f_err = δforces(basis_ref, occupation, φr, proj_tangent(err, φr))
-        f_res = δforces(basis_ref, occupation, φr, Mres)
-        f_schur = δforces(basis_ref, occupation, φr, e_schur)
+        f_err_FD = δforces(basis_ref, occupation, φr, proj_tangent(err, φr))
+        f_res_FD = δforces(basis_ref, occupation, φr, Mres)
+        f_schur_FD = δforces(basis_ref, occupation, φr, e_schur)
+
+        f_err = compute_forces_estimate(basis_ref, proj_tangent(err, φr), φr, occupation)
+        f_res = compute_forces_estimate(basis_ref, Mres, φr, occupation)
+        f_schur = compute_forces_estimate(basis_ref, e_schur, φr, occupation)
+
+        println(norm(f_err_FD - f_err))
+        println(norm(f_res_FD - f_res))
+        println(norm(f_schur_FD - f_schur))
 
         ##  plot carots
         #  G_energies = DFTK.G_vectors_cart(basis_f.kpoints[1])
@@ -169,7 +172,6 @@ for Ecut_g in Ecut_list
         #  legend()
 
         diff_list[i,j] = norm(f_g-f_ref)
-        diff_newton_list[i,j] = norm(f_newton-f_ref)
         approx_list_err[i,j] = norm(f_err)
         approx_list_res[i,j] = norm(f_res)
         approx_list_schur[i,j] = norm(f_schur)
@@ -188,7 +190,6 @@ h5open("Ecutf_fixed_forces.h5", "w") do file
     file["Ecut_ref"] = Ecut_ref
     file["Ecut_list"] = collect(Ecut_list)
     file["diff_list"] = diff_list
-    file["diff_newton_list"] = diff_newton_list
     file["diff_list_res"] = diff_list_res
     file["diff_list_err"] = diff_list_err
     file["diff_list_schur"] = diff_list_schur
@@ -202,7 +203,6 @@ end
 
 figure()
 semilogy(Ecut_list, [diff_list[i,i] for i in 1:length(Ecut_list)], label="F-F*")
-semilogy(Ecut_list, [diff_newton_list[i,i] for i in 1:length(Ecut_list)], label="Fnewton-F*")
 semilogy(Ecut_list, [diff_list_err[i,i] for i in 1:length(Ecut_list)], label="F-Ferr-F*")
 semilogy(Ecut_list, [diff_list_res[i,i] for i in 1:length(Ecut_list)], label="F-Fres-F*")
 semilogy(Ecut_list, [diff_list_schur[i,i] for i in 1:length(Ecut_list)], label="F-Fschur-F*")
