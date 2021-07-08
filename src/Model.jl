@@ -20,7 +20,7 @@ struct Model{T <: Real}
     #     :collinear  Spin is polarized, but everywhere in the same direction.
     #                 αα ̸= ββ, αβ = βα = 0, 2 spin components treated
     #     :full       Generic magnetization, non-uniform direction.
-    #                 αβ, βα, αα, ββ all nonzero, different
+    #                 αβ, βα, αα, ββ all nonzero, different (not supported)
     #     :spinless   No spin at all ("spinless fermions", "mathematicians' electrons").
     #                 The difference with :none is that the occupations are 1 instead of 2
     spin_polarization::Symbol
@@ -103,7 +103,8 @@ function Model(lattice::AbstractMatrix{T};
         norm(lattice[:, i]) == norm(lattice[i, :]) == 0 || error(
             "For 1D and 2D systems, the non-empty dimensions must come first")
     end
-    cond(lattice[1:d, 1:d]) > 1e-5 || @warn "Your lattice is badly conditioned, the computation is likely to fail."
+
+    _check_well_conditioned(lattice[1:d, 1:d]) || @warn "Your lattice is badly conditioned, the computation is likely to fail."
 
     # Compute reciprocal lattice and volumes.
     # recall that the reciprocal lattice is the set of G vectors such
@@ -117,6 +118,7 @@ function Model(lattice::AbstractMatrix{T};
 
     spin_polarization in (:none, :collinear, :full, :spinless) ||
         error("Only :none, :collinear, :full and :spinless allowed for spin_polarization")
+    spin_polarization == :full && error("Full spin polarization not yet supported")
     !isempty(magnetic_moments) && !(spin_polarization in (:collinear, :full)) && @warn(
         "Non-empty magnetic_moments on a Model without spin polarization detected."
     )
@@ -205,10 +207,11 @@ end
 Explicit spin components of the KS orbitals and the density
 """
 function spin_components(spin_polarization::Symbol)
-    @assert spin_polarization in (:none, :spinless, :collinear)
     spin_polarization == :collinear && return (:up, :down  )
     spin_polarization == :none      && return (:both,      )
     spin_polarization == :spinless  && return (:spinless,  )
     spin_polarization == :full      && return (:undefined, )
 end
 spin_components(model::Model) = spin_components(model.spin_polarization)
+
+_check_well_conditioned(A; tol=1e5) = (cond(A) <= tol)
