@@ -95,7 +95,7 @@ function (E::AtomicLocal)(basis::PlaneWaveBasis{T}) where {T}
 end
 
 @timing "forces: local" function compute_forces(term::TermAtomicLocal, ψ, occ; ρ, kwargs...)
-    T = eltype(term.basis)
+    T = real(eltype(ψ[1]))
     atoms = term.basis.model.atoms
     recip_lattice = term.basis.model.recip_lattice
     unit_cell_volume = term.basis.model.unit_cell_volume
