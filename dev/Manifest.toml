@@ -86,8 +86,8 @@ version = "1.3.0"
 
 [[DFTK]]
 deps = ["AbstractFFTs", "BlockArrays", "Conda", "FFTW", "ForwardDiff", "Interpolations", "IterTools", "IterativeSolvers", "JSON", "Libxc", "LineSearches", "LinearAlgebra", "LinearMaps", "MPI", "Markdown", "NLsolve", "Optim", "OrderedCollections", "PeriodicTable", "Polynomials", "Primes", "Printf", "ProgressMeter", "PyCall", "Requires", "Roots", "SpecialFunctions", "StaticArrays", "Statistics", "TimerOutputs", "Unitful", "UnitfulAtomic", "spglib_jll"]
-git-tree-sha1 = "135149eeaacdb9c6180bfff592100159414972f4"
-repo-rev = "1261e0616c33a4757d9eb4950c15e3158fcac524"
+git-tree-sha1 = "9fdebbe6f48be5a07324c9b5b21309dc659e9433"
+repo-rev = "e8079e3fd2a1f840b13453bf29409ff99736dcc4"
 repo-url = "https://github.com/JuliaMolSim/DFTK.jl.git"
 uuid = "acf6eb54-70d9-11e9-0013-234b7a5f5337"
 version = "0.3.7"
