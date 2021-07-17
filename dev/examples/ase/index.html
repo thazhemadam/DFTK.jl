@@ -21,20 +21,20 @@ basis = PlaneWaveBasis(model, Ecut; kgrid=kgrid)
 
 scfres = self_consistent_field(basis, tol=1e-4, mixing=KerkerMixing());</code></pre><pre class="documenter-example-output">n     Free energy       Eₙ-Eₙ₋₁     ρout-ρin   α      Diag
 ---   ---------------   ---------   --------   ----   ----
-  1   -16.61054613765         NaN   2.60e-01   0.80    4.8
-  2   -16.72309971479   -1.13e-01   8.40e-02   0.80    1.0
-  3   -16.66387039098    5.92e-02   5.17e-02   0.80    3.2
-  4   -16.73196974748   -6.81e-02   2.06e-02   0.80    3.0
-  5   -16.73635674570   -4.39e-03   4.97e-03   0.80    3.2
-  6   -16.73627526524    8.15e-05   2.24e-03   0.80    3.0</pre><pre><code class="language-julia">scfres.energies</code></pre><pre class="documenter-example-output">Energy breakdown:
-    Kinetic             5.8423946 
-    AtomicLocal         -105.5631883
-    AtomicNonlocal      2.3491019 
+  1   -16.61252165645         NaN   2.60e-01   0.80    4.8
+  2   -16.72321218486   -1.11e-01   8.37e-02   0.80    1.0
+  3   -16.66375702397    5.95e-02   5.17e-02   0.80    3.2
+  4   -16.73208898133   -6.83e-02   2.04e-02   0.80    2.8
+  5   -16.73635431724   -4.27e-03   5.03e-03   0.80    3.2
+  6   -16.73629057384    6.37e-05   2.34e-03   0.80    3.2</pre><pre><code class="language-julia">scfres.energies</code></pre><pre class="documenter-example-output">Energy breakdown:
+    Kinetic             5.8420491 
+    AtomicLocal         -105.5600778
+    AtomicNonlocal      2.3489274 
     Ewald               35.5044300
     PspCorrection       0.2016043 
-    Hartree             49.5233570
-    Xc                  -4.5938245
-    Entropy             -0.0001503
+    Hartree             49.5206156
+    Xc                  -4.5936920
+    Entropy             -0.0001473
 
-    total               -16.736275265237
-</pre><section class="footnotes is-size-7"><ul><li class="footnote" id="footnote-RCW2001"><a class="tag is-link" href="#citeref-RCW2001">RCW2001</a>D. Raczkowski, A. Canning, and L. W. Wang <em>Thomas-Fermi charge mixing for obtaining self-consistency in density functional calculations</em> Phys. Rev. B <strong>64</strong>, 121101(R).</li></ul></section></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../pymatgen/">« Creating supercells with pymatgen</a><a class="docs-footer-nextpage" href="../collinear_magnetism/">Collinear spin and magnetic systems »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Saturday 17 July 2021 15:49">Saturday 17 July 2021</span>. Using Julia version 1.6.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+    total               -16.736290573844
+</pre><section class="footnotes is-size-7"><ul><li class="footnote" id="footnote-RCW2001"><a class="tag is-link" href="#citeref-RCW2001">RCW2001</a>D. Raczkowski, A. Canning, and L. W. Wang <em>Thomas-Fermi charge mixing for obtaining self-consistency in density functional calculations</em> Phys. Rev. B <strong>64</strong>, 121101(R).</li></ul></section></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../pymatgen/">« Creating supercells with pymatgen</a><a class="docs-footer-nextpage" href="../collinear_magnetism/">Collinear spin and magnetic systems »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Saturday 17 July 2021 16:27">Saturday 17 July 2021</span>. Using Julia version 1.6.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
