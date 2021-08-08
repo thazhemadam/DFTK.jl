@@ -20,7 +20,7 @@ function high_symmetry_kpath(model; kline_density=20)
     # but for this the best way to go would be to refactor into a small "CrystalStructure"
     # julia module which deals with these sort of low-level details everyone can agree on.
     pystructure = pymatgen_structure(model.lattice, model.atoms)
-    symm_kpath = pyimport("pymatgen.symmetry.bandstructure").HighSymmKpath(pystructure)
+    symm_kpath = pyimport("pymatgen.symmetry.bandstructure").HighSymmKpath(pystructure, path_type="hin")
     kcoords, labels = symm_kpath.get_kpoints(kline_density, coords_are_cartesian=false)
 
     labels_dict = Dict{String, Vector{eltype(kcoords[1])}}()
