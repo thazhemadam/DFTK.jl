@@ -17,4 +17,3 @@ WriteVTK = "64499a7a-5c06-52f2-abe2-ccb03c286192"
 
 [compat]
 Documenter = "~0.26"
-JLD2 = "0.4 - 0.4.7"
