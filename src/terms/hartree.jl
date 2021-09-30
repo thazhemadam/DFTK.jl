@@ -25,24 +25,20 @@ struct TermHartree <: Term
     inv_poisson_green_coeffs
 end
 function TermHartree(basis::PlaneWaveBasis{T}, scaling_factor) where T
+    model = basis.model
+
     # Solving the Poisson equation ΔV = -4π ρ in Fourier space
     # is multiplying elementwise by 4π / |G|^2.
-    poisson_green_coeffs = 4T(π) ./ [sum(abs2, basis.model.recip_lattice * G)
-                                     for G in G_vectors(basis)]
-
-    # Zero the DC component (i.e. assume a compensating charge background)
-    poisson_green_coeffs[1] = 0
-    poisson_green_coeffs = scaling_factor .* poisson_green_coeffs
-
-    inv_poisson_green_coeffs = deepcopy(poisson_green_coeffs)
-    for i in 1:length(inv_poisson_green_coeffs)
-        if inv_poisson_green_coeffs[i] != 0.0
-            inv_poisson_green_coeffs[i] = 1/inv_poisson_green_coeffs[i]
-        end
+    poisson_green_coeffs = 4T(π) ./ [sum(abs2, G) for G in G_vectors_cart(basis)]
+    if !isempty(model.atoms)
+        # Assume positive charge from nuclei is exactly compensated by the electrons
+        sum_charges = sum(length(positions) * charge_ionic(elem)
+                          for (elem, positions) in model.atoms)
+        @assert sum_charges == model.n_electrons
     end
+    poisson_green_coeffs[1] = 0  # Compensating charge background => Zero DC
 
-    TermHartree(basis, scaling_factor, poisson_green_coeffs,
-               inv_poisson_green_coeffs)
+    TermHartree(basis, scaling_factor, scaling_factor .* poisson_green_coeffs)
 end
 
 @timing "ene_ops: hartree" function ene_ops(term::TermHartree, ψ, occ; ρ, kwargs...)

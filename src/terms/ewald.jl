@@ -44,8 +44,14 @@ end
 end
 
 function energy_ewald(model::Model; kwargs...)
-    charges = [charge_ionic(type) for (type, positions) in model.atoms for pos in positions]
-    positions = [pos for (elem, positions) in model.atoms for pos in positions]
+    charges   = [charge_ionic(elem) for (elem, positions) in model.atoms for pos in positions]
+    positions = [pos for (_, positions) in model.atoms for pos in positions]
+    isempty(charges) && return zero(eltype(model.lattice))
+
+    # DFTK currently assumes that the compensating charge in the electronic and nuclear
+    # terms is equal and of opposite sign. See also the PSP correction term, where n_electrons
+    # is used synonymously for sum of charges
+    @assert sum(charges) == model.n_electrons
     energy_ewald(model.lattice, charges, positions; kwargs...)
 end
 
@@ -69,7 +75,7 @@ function energy_ewald(lattice, charges, positions; η=nothing, forces=nothing)
             return T(0)
         end
     end
-    energy_ewald(lattice, T(2π) * inv(lattice'), charges, positions; η=η, forces=forces)
+    energy_ewald(lattice, compute_recip_lattice(lattice), charges, positions; η, forces)
 end
 
 function energy_ewald(lattice, recip_lattice, charges, positions; η=nothing, forces=nothing)
@@ -156,9 +162,9 @@ function energy_ewald(lattice, recip_lattice, charges, positions; η=nothing, fo
         gsh += 1
     end
     # Amend sum_recip by proper scaling factors:
-    sum_recip *= 4T(π) / abs(det(lattice))
+    sum_recip *= 4T(π) / compute_unit_cell_volume(lattice)
     if forces !== nothing
-        forces_recip .*= 4T(π) / abs(det(lattice))
+        forces_recip .*= 4T(π) / compute_unit_cell_volume(lattice)
     end
 
     #
